@@ -7,9 +7,9 @@
 
 ## 两种用法
 
-- **开箱即用（不用装 Node）**：到 [Releases](https://github.com/linjiaminaaa/instabox-panel/releases/latest) 下载 `instabox-panel-v1.2.0.zip`，
-  解压后双击 `start.bat`。压缩包内置了 Windows x64 的 Node 运行时。
-- **源码运行**：克隆本仓库，安装 Node.js 18+（建议 24），然后 `node server.mjs`（或双击 `start.bat`，没有内置 node.exe 时会用系统 node）。
+- **开箱即用（不用装 Node）**：到 [Releases](https://github.com/linjiaminaaa/instabox-panel/releases/latest) 下载 `instabox-panel-v1.2.0-lite.zip`，
+  解压后双击 `start.bat`。首次启动会自动从 npmmirror 下载 Node 运行时（约 30MB，只需一次），之后就是本地单文件运行。
+- **源码运行**：克隆本仓库，安装 Node.js 18+（建议 24），然后 `node server.mjs`（或双击 `start.bat`，没有 node.exe 且系统没有 node 时会自动下载）。
 
 ## 1. 准备
 
@@ -20,7 +20,7 @@
 
 ## 2. 启动
 
-双击 `start.bat`（Release 包内置 Node；源码仓库会回退到系统 node）。首次运行会自动生成面板口令。
+双击 `start.bat`。首次启动时如果本机没有 Node，会自动下载约 30MB 的 Node 运行时到当前目录（走 npmmirror，国内速度正常），之后不再下载。首次运行还会自动生成面板口令。
 
 浏览器打开 <http://127.0.0.1:5174>。
 
@@ -61,7 +61,7 @@ docs/panel.md         面板详细说明
 data/                 运行时生成：口令哈希、key、历史（不要外传）
 ```
 
-Release 包比源码多一个 `node.exe`（内置 Node 运行时）。源码仓库不含它，`start.bat` 会自动回退到系统 node。
+Release 包首次启动后会多一个 `node.exe`（自动下载的 Node 运行时，约 92MB）。源码仓库不含它，`start.bat` 会依次尝试：本机 node.exe → 系统 node → 自动下载。
 
 ## 详细说明
 
