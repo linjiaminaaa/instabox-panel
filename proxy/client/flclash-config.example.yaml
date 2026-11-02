@@ -1,0 +1,58 @@
+# FlClash / mihomo 客户端配置示例
+# 把 <...> 全部替换成你的值，然后 FlClash：配置 → 添加 → 从文件导入
+#
+# 服务器域名 = https://<port>-<机器ID去掉 m_>.instabox.tech 里的主机名
+# UUID / WS 路径 = install.sh 输出
+# 私密端口（--private）需要额外加 Authorization 头，见文件末尾注释
+
+mixed-port: 7890
+allow-lan: true
+bind-address: "*"
+mode: rule
+log-level: info
+ipv6: false
+unified-delay: true
+tcp-concurrent: true
+
+dns:
+  enable: true
+  ipv6: false
+  enhanced-mode: fake-ip
+  fake-ip-range: 198.18.0.1/16
+  # DNS 直连（不经过代理），避免代理未就绪时解析失败
+  nameserver:
+    - https://223.5.5.5/dns-query
+    - https://1.1.1.1/dns-query
+  proxy-server-nameserver:
+    - https://223.5.5.5/dns-query
+
+proxies:
+  - name: instabox
+    type: vless
+    # 只填主机名，不要带 https:// 或端口
+    server: <PORT>-<MACHINE_ID_WITHOUT_m_>.instabox.tech
+    port: 443
+    uuid: <UUID>
+    # TLS 由 InstaBox 边缘终止，这里必须为 true
+    tls: true
+    servername: <PORT>-<MACHINE_ID_WITHOUT_m_>.instabox.tech
+    client-fingerprint: chrome
+    network: ws
+    ws-opts:
+      path: <WS_PATH>
+      headers:
+        Host: <PORT>-<MACHINE_ID_WITHOUT_m_>.instabox.tech
+        # 只有私密端口（port publish --private）才需要下面这行；本机已用公开端口，不需要：
+        # Authorization: Bearer <ibp_TOKEN>
+    udp: true
+    skip-cert-verify: false
+
+proxy-groups:
+  - name: PROXY
+    type: select
+    proxies:
+      - instabox
+
+rules:
+  - GEOIP,CN,DIRECT
+  - MATCH,PROXY

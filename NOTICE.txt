@@ -1,0 +1,6 @@
+InstaBox 面板
+
+本仓库源码不包含 Node.js 运行时；Release 压缩包（instabox-panel-v1.2.0.zip）内置了 node.exe。
+
+内置的 node.exe 版权归 Node.js contributors，按 MIT 许可证分发：
+https://github.com/nodejs/node/blob/main/LICENSE

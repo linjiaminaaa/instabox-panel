@@ -1,0 +1,14 @@
+# runtime / local data
+data/
+node.exe
+_zipcheck/
+*.zip
+
+# OS noise
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# logs / temp
+*.log
+*.tmp

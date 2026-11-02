@@ -1,0 +1,27 @@
+{
+  "log": { "loglevel": "warning" },
+  "inbounds": [
+    {
+      "listen": "0.0.0.0",
+      "port": 8080,
+      "protocol": "vless",
+      "settings": {
+        "clients": [{ "id": "REPLACE_WITH_UUID" }],
+        "decryption": "none"
+      },
+      "streamSettings": {
+        "network": "ws",
+        "wsSettings": { "path": "/ws" }
+      }
+    }
+  ],
+  "outbounds": [
+    { "protocol": "freedom", "settings": {} },
+    { "protocol": "blackhole", "settings": {}, "tag": "block" }
+  ],
+  "routing": {
+    "rules": [
+      { "type": "field", "ip": ["geoip:private"], "outboundTag": "block" }
+    ]
+  }
+}
