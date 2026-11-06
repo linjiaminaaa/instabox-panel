@@ -351,6 +351,7 @@ function renderProxy(m) {
         <span class="proxy-actions">
           <button class="btn sm primary" data-proxy="start" ${canStart ? '' : 'disabled'}>启动</button>
           <button class="btn sm danger" data-proxy="stop" ${canStop ? '' : 'disabled'}>停止</button>
+          <button class="btn sm" data-proxy="rotate" ${busy || !running ? 'disabled' : ''} title="生成新 UUID，旧配置立即失效">换 UUID</button>
         </span>
       </div>
       ${running ? `
@@ -395,6 +396,24 @@ async function doSpeedtest() {
     toast(err.message, 'error');
   } finally {
     S.speedtestBusy = false;
+    render();
+  }
+}
+
+async function doRotateUuid() {
+  if (!confirm('换 UUID？\n\n所有已导入的客户端（YAML / vless）会立即失效，需要重新导入。\n旧配置会备份在机器的 /root/xray-config.bak.*。')) return;
+  S.proxyBusy = true;
+  render();
+  try {
+    const r = await api('/api/proxy/rotate-uuid', { method: 'POST' });
+    S.proxy = r.status || null;
+    S.speedtest = null;
+    toast('UUID 已更换，请重新下载 / 复制配置', 'ok');
+  } catch (err) {
+    toast(err.message, 'error');
+    try { S.proxy = await api('/api/proxy?force=1'); } catch {}
+  } finally {
+    S.proxyBusy = false;
     render();
   }
 }
@@ -470,7 +489,10 @@ document.addEventListener('click', async (e) => {
     return;
   }
   const pbtn = e.target.closest('button[data-proxy]');
-  if (pbtn) return doProxy(pbtn.dataset.proxy);
+  if (pbtn) {
+    if (pbtn.dataset.proxy === 'rotate') return doRotateUuid();
+    return doProxy(pbtn.dataset.proxy);
+  }
   const qbtn = e.target.closest('button[data-qr]');
   if (qbtn) return openProxyQr();
   const ybtn = e.target.closest('button[data-yaml]');

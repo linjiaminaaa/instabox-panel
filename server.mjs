@@ -735,6 +735,7 @@ function proxyVless(uuid, m = proxyMachine()) {
 
 let mockXrayActive = false;
 function mockSsh(cmd) {
+  if (cmd.includes('/tmp/ibt-rotate.py')) return { code: 0, stdout: 'ROTATED 1 /root/xray-config.bak.mock\n', stderr: '' };
   if (cmd.includes('systemctl start xray')) { mockXrayActive = true; return { code: 0, stdout: '', stderr: '' }; }
   if (cmd.includes('systemctl stop xray')) { mockXrayActive = false; return { code: 0, stdout: '', stderr: '' }; }
   if (cmd.includes('systemctl is-active')) {
@@ -830,8 +831,40 @@ async function proxyStop() {
   return { ok: true, status: await proxyStatus(true) };
 }
 
-/* ------------------------------- 测速 / 配置 ------------------------------ */
+/** 一键轮换 Xray 的 client UUID：备份 → 改写配置 → 原本在运行就重启 → 返回新状态 */
+const ROTATE_SCRIPT = `import json, shutil, sys, time, uuid
+p = "/usr/local/etc/xray/config.json"
+bak = "/root/xray-config.bak." + str(int(time.time()))
+shutil.copy2(p, bak)
+with open(p, "r", encoding="utf-8") as f:
+    conf = json.load(f)
+count = 0
+for inbound in conf.get("inbounds", []):
+    for client in inbound.get("settings", {}).get("clients", []):
+        client["id"] = str(uuid.uuid4())
+        count += 1
+if count == 0:
+    print("NO_CLIENTS")
+    sys.exit(1)
+with open(p, "w", encoding="utf-8") as f:
+    json.dump(conf, f, ensure_ascii=False, indent=2)
+print("ROTATED", count, bak)`;
 
+async function proxyRotateUuid() {
+  const p = proxySettings();
+  if (!proxyMachine()) return { ok: false, error: '先在设置里选择代理机器' };
+  const b64 = Buffer.from(ROTATE_SCRIPT, 'utf8').toString('base64');
+  const remote = `was=$(systemctl is-active xray 2>/dev/null || true); printf '%s' '${b64}' | base64 -d > /tmp/ibt-rotate.py && sudo python3 /tmp/ibt-rotate.py && rm -f /tmp/ibt-rotate.py && case "$was" in active) sudo systemctl restart xray ;; esac; systemctl is-active xray 2>/dev/null || true`;
+  const r = await runSsh(p.sshHost, remote, 120000);
+  if (!/ROTATED/.test(r.stdout)) {
+    return { ok: false, error: (r.stderr || r.stdout || '换 UUID 失败').trim().slice(0, 300) };
+  }
+  proxyCache = { at: 0, value: null };
+  await sleep(400);
+  return { ok: true, status: await proxyStatus(true) };
+}
+
+/* ------------------------------- 测速 / 配置 ------------------------------ */
 let speedtestBusy = false;
 
 function proxyWsUrl() {
@@ -1108,6 +1141,11 @@ async function handleApi(req, res, url) {
 
   if (p === '/api/proxy/stop' && req.method === 'POST') {
     const r = await proxyStop();
+    return sendJSON(res, r.ok ? 200 : 502, r);
+  }
+
+  if (p === '/api/proxy/rotate-uuid' && req.method === 'POST') {
+    const r = await proxyRotateUuid();
     return sendJSON(res, r.ok ? 200 : 502, r);
   }
 
