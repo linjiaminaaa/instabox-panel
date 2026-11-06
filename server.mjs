@@ -1096,7 +1096,10 @@ async function handleApi(req, res, url) {
 
   if (p === '/api/state' && req.method === 'GET') return sendJSON(res, 200, publicState());
 
-  if (p === '/api/proxy' && req.method === 'GET') return sendJSON(res, 200, await proxyStatus());
+  if (p === '/api/proxy' && req.method === 'GET') {
+    const force = url.searchParams.get('force') === '1';
+    return sendJSON(res, 200, await proxyStatus(force));
+  }
 
   if (p === '/api/proxy/start' && req.method === 'POST') {
     const r = await proxyStart();

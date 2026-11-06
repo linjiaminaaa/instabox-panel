@@ -140,7 +140,7 @@ async function loadState() {
   }
 }
 
-async function loadProxy() {
+async function loadProxy(force = false) {
   const p = S.data?.settings?.proxy;
   if (!p || !p.machineId) {
     S.proxy = null;
@@ -148,11 +148,26 @@ async function loadProxy() {
     return;
   }
   try {
-    S.proxy = await api('/api/proxy');
+    S.proxy = await api(`/api/proxy${force ? '?force=1' : ''}`);
   } catch {
     S.proxy = null;
   }
   if (S.data) render();
+}
+
+async function refreshAll() {
+  const btn = $('#btn-refresh');
+  if (!btn || btn.disabled || S.proxyBusy) return;
+  btn.disabled = true;
+  btn.textContent = '刷新中…';
+  try {
+    await loadState();
+    if (S.data?.settings?.proxy?.machineId) await loadProxy(true);
+    else render();
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '刷新';
+  }
 }
 
 async function boot() {
@@ -750,6 +765,7 @@ $('#btn-add').addEventListener('click', () => {
   $('#add-dialog').showModal();
 });
 $$('[data-open-add]').forEach((b) => b.addEventListener('click', () => $('#btn-add').click()));
+$('#btn-refresh').addEventListener('click', refreshAll);
 $$('[data-close]').forEach((b) => b.addEventListener('click', () => b.closest('dialog').close()));
 
 $('#add-form').addEventListener('submit', async (e) => {
